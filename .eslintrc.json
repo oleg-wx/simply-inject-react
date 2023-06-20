@@ -1,0 +1,109 @@
+{
+  "root": true,
+  "ignorePatterns": ["rollup.config.js"],
+  "overrides": [
+    {
+      "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:react/recommended"
+      ],
+      "files": ["*.ts", "*.tsx"],
+      "parserOptions": {
+        "createDefaultProgram": true,
+        "project": ["tsconfig.json"]
+      },
+      "rules": {
+        "@typescript-eslint/array-type": "warn",
+        "@typescript-eslint/comma-spacing": [
+          "warn",
+          {
+            "after": true,
+            "before": false
+          }
+        ],
+        "@typescript-eslint/dot-notation": ["warn"],
+        "@typescript-eslint/explicit-module-boundary-types": "off",
+        "@typescript-eslint/keyword-spacing": [
+          "warn",
+          {
+            "overrides": {
+              "this": {
+                "before": false
+              }
+            }
+          }
+        ],
+        "@typescript-eslint/lines-between-class-members": [
+          "warn",
+          "always",
+          {
+            "exceptAfterSingleLine": true
+          }
+        ],
+        "@typescript-eslint/no-base-to-string": "warn",
+        "@typescript-eslint/no-explicit-any": "warn",
+        "@typescript-eslint/no-inferrable-types": "off",
+        "@typescript-eslint/no-non-null-assertion": "off",
+        "@typescript-eslint/no-unnecessary-boolean-literal-compare": "warn",
+        "array-bracket-spacing": ["warn", "never"],
+        "arrow-body-style": ["error", "as-needed"],
+        "arrow-spacing": [
+          "warn",
+          {
+            "after": true,
+            "before": true
+          }
+        ],
+        "block-spacing": "warn",
+        "comma-style": ["error", "last"],
+        "computed-property-spacing": ["warn", "never"],
+        "dot-location": ["warn", "property"],
+        "func-call-spacing": ["error", "never"],
+        "id-length": [
+          "warn",
+          {
+            "exceptions": ["i", "j", "e", "x", "y", "z", "_"],
+            "min": 2
+          }
+        ],
+        "key-spacing": [
+          "warn",
+          {
+            "afterColon": true
+          }
+        ],
+        "no-alert": "error",
+        "no-console": "warn",
+        "no-debugger": "warn",
+        "no-eval": "error",
+        "no-implied-eval": "error",
+        "no-lonely-if": "warn",
+        "no-var": "warn",
+        "padding-line-between-statements": [
+          "warn",
+          {
+            "blankLine": "always",
+            "next": "return",
+            "prev": "*"
+          },
+          {
+            "blankLine": "always",
+            "next": ["block", "block-like"],
+            "prev": ["block", "block-like"]
+          }
+        ],
+        "prefer-const": "warn",
+        "react/react-in-jsx-scope": "off",
+        "react/self-closing-comp": [
+          "warn",
+          {
+            "component": true,
+            "html": true
+          }
+        ],
+        "semi-style": ["warn", "last"]
+      }
+    }
+  ]
+}
