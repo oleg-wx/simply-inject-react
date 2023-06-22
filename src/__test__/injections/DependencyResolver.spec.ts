@@ -5,7 +5,7 @@ import {
   provideClass,
   provideFactory,
   provideValue,
-} from 'injections/di/utils';
+} from 'injections';
 import {
   InjectKey,
   TestAbstract,
@@ -18,8 +18,11 @@ import {
   TestInjectAbstract,
   TestInjectValue,
   TestParent,
-} from './testClassesInject';
-import { delayed } from './delayed';
+  TestParentOnlySelf,
+  TestParentSkipSelf,
+  TestParentWithParentOnlySelf,
+} from '../testClassesInject';
+import { delayed } from '../delayed';
 
 describe('[DependencyResolver] simple tests', () => {
   interface Test {
@@ -94,8 +97,9 @@ describe('[DependencyResolver] simple tests', () => {
   });
 
   it('should resolve by string key', () => {
-    const resolver = new DependencyResolver([{ provide: 'inject', useFactory: () => new TestExtend() }]);
-    expect(resolver.get('inject')).toBeInstanceOf(TestExtend);
+    const key = new StaticKey('inject');
+    const resolver = new DependencyResolver([{ provide: key, useFactory: () => new TestExtend() }]);
+    expect(resolver.get(key)).toBeInstanceOf(TestExtend);
   });
 
   it('should resolve class and return undefined for not provided', () => {
@@ -291,10 +295,26 @@ describe('[DependencyResolver] Lifetimes', () => {
       expect(resolver2).toThrow(/Singleton/);
     });
   });
+
+  it('should return undefined for not provided items', () => {
+    const KEY = new StaticKey<{ date: Date }>('KEY');
+
+    let resolver = new DependencyResolver([]);
+    const test1 = resolver.get(KEY)!;
+    const test2 = resolver.get(TestParent);
+
+    expect(test1).toBeUndefined();
+    expect(test2).toBeUndefined();
+
+    resolver = new DependencyResolver([provideClass(TestParent)]);
+    const test3 = resolver.get(TestParent);
+    expect(test3).not.toBeUndefined();
+    expect(test3!.test).toBeUndefined();
+  });
 });
 
 describe('[DependencyResolver] Parent resolver', () => {
-  fit('should resolve overridden items from parent', async () => {
+  it('should resolve overridden items from parent', async () => {
     const resolver1 = new DependencyResolver([
       provideClass(TestAbstract, TestConcrete1),
       provideClass(TestParent, 'transient'),
@@ -310,5 +330,149 @@ describe('[DependencyResolver] Parent resolver', () => {
 
     expect(test1.test.value).toBe(1);
     expect(test2.test.value).toBe(2);
+  });
+});
+
+describe('[DependencyResolver] Factory', () => {
+  const KEY = new StaticKey<{ date: Date }>('KEY');
+  it('should call factory once for scoped', async () => {
+    let called = 0;
+    const resolver = new DependencyResolver([
+      provideFactory(
+        KEY,
+        () => {
+          called++;
+
+          return { date: new Date() };
+        },
+        'scoped'
+      ),
+    ]);
+
+    const test1 = resolver.get(KEY)!;
+
+    await delayed(() => {
+      const resolver2 = new DependencyResolver([], [], resolver);
+      const test2 = resolver2.get(KEY)!;
+      expect(test1.date.getTime()).toBe(test2.date.getTime());
+      expect(called).toBe(1);
+    });
+  });
+
+  it('should call factory once for singleton', async () => {
+    let called = 0;
+    const resolver = new DependencyResolver([
+      provideFactory(
+        KEY,
+        () => {
+          called++;
+
+          return { date: new Date() };
+        },
+        'singleton'
+      ),
+    ]);
+
+    const test1 = resolver.get(KEY)!;
+
+    await delayed(() => {
+      const resolver2 = new DependencyResolver([], [], resolver);
+      const test2 = resolver2.get(KEY)!;
+      expect(test1.date.getTime()).toBe(test2.date.getTime());
+      expect(called).toBe(1);
+    });
+  });
+
+  it('should call factory multiple times for transient', async () => {
+    let called = 0;
+    const resolver = new DependencyResolver([
+      provideFactory(
+        KEY,
+        () => {
+          called++;
+
+          return { date: new Date() };
+        },
+        'transient'
+      ),
+    ]);
+
+    const test1 = resolver.get(KEY)!;
+
+    await delayed(() => {
+      const resolver2 = new DependencyResolver([], [], resolver);
+      const test2 = resolver2.get(KEY)!;
+      expect(test1.date.getTime()).not.toBe(test2.date.getTime());
+      expect(called).toBe(2);
+    });
+  });
+});
+
+describe('[DependencyResolver] Resolutions', () => {
+  it('should skip self', async () => {
+    const resolver1 = new DependencyResolver([provideClass(TestAbstract, TestConcrete1)]);
+    const resolver2 = new DependencyResolver([provideClass(TestAbstract, TestConcrete2)], [], resolver1);
+
+    const test1 = resolver1.get(TestAbstract, 'skipSelf')!;
+    const test2 = resolver2.get(TestAbstract, 'skipSelf')!;
+
+    expect(test1.value).toBe(1);
+    expect(test2.value).toBe(1);
+  });
+
+  it('should use only self', async () => {
+    const resolver1 = new DependencyResolver([provideClass(TestAbstract, TestConcrete1)]);
+    const resolver2 = new DependencyResolver([], [], resolver1);
+
+    const test1 = resolver1.get(TestAbstract, 'onlySelf')!;
+    const test2 = resolver2.get(TestAbstract, 'onlySelf')!;
+
+    expect(test1.value).toBe(1);
+    expect(test2).toBeUndefined();
+  });
+
+  it('should skip self with @Inject', async () => {
+    const resolver1 = new DependencyResolver([
+      provideClass(TestAbstract, TestConcrete1),
+      provideClass(TestParentSkipSelf),
+    ]);
+    const resolver2 = new DependencyResolver(
+      [provideClass(TestAbstract, TestConcrete2), provideClass(TestParentSkipSelf)],
+      [],
+      resolver1
+    );
+
+    const test1 = resolver1.get(TestParentSkipSelf)!;
+    const test2 = resolver2.get(TestParentSkipSelf)!;
+
+    expect(test1.test.value).toBe(1);
+    expect(test2.test.value).toBe(1);
+  });
+
+  it('should use only self with @Inject', async () => {
+    const resolver1 = new DependencyResolver([
+      provideClass(TestAbstract, TestConcrete1),
+      provideClass(TestParentOnlySelf),
+    ]);
+    const resolver2 = new DependencyResolver([provideClass(TestParentOnlySelf)], [], resolver1);
+
+    const test1 = resolver1.get(TestParentOnlySelf)!;
+    const test2 = resolver2.get(TestParentOnlySelf)!;
+
+    expect(test1.test.value).toBe(1);
+    expect(test2.test).toBeUndefined();
+
+    let resolver3 = new DependencyResolver([provideClass(TestParentWithParentOnlySelf)], [], resolver2);
+    let test3 = resolver3.get(TestParentWithParentOnlySelf)!;
+    expect(test3.test).toBeUndefined();
+
+    resolver3 = new DependencyResolver(
+      [provideClass(TestParentWithParentOnlySelf), provideClass(TestParentOnlySelf)],
+      [],
+      resolver2
+    );
+    test3 = resolver3.get(TestParentWithParentOnlySelf)!;
+    expect(test3.test).not.toBeUndefined();
+    expect(test3.test.test).toBeUndefined();
   });
 });

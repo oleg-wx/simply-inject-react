@@ -1,1 +1,1 @@
-export { Inject, Injectable } from "./utils/ObjectCreator";
+export { Inject, Injectable, Resolution } from './utils/ObjectCreator';

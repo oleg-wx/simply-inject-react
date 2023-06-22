@@ -4,18 +4,22 @@ import {
   Constructor,
   ConstructorProvider,
   FactoryProvider,
-  Lifetime,
+  LifetimeType,
   Provider,
   ProviderKey,
+  ResolutionType,
   ValueProvider,
-  getKey,
 } from './types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type CreatorGetter<T = any> = <T2 = unknown>(key: ProviderKey<T2>) => ObjectCreator<T> | undefined;
+export type CreatorGetter<T = any> = <T2 = unknown>(
+  key: ProviderKey<T2>,
+  resolution: ResolutionType
+) => ObjectCreator<T> | undefined;
 
 const injectable_ = Symbol('injectable_');
 const inject_ = Symbol('inject_');
+const inject_resolution_ = Symbol('inject_resolution_');
 const design_param_types = 'design:paramtypes';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,7 +35,7 @@ export class ObjectCreator<T = any> {
   private _rqto?: ReturnType<typeof setTimeout>;
   private _object?: T;
 
-  readonly lifetime: Lifetime = 'scoped';
+  readonly lifetime: LifetimeType = 'scoped';
   readonly provide: ProviderKey<T>;
   readonly use?: Constructor<T>;
   readonly factory?: FactoryProvider<T>['useFactory'];
@@ -94,7 +98,7 @@ export class ObjectCreator<T = any> {
     if (this.value != null) {
       return this.value as TCreate;
     } else if (this.factory) {
-      return this.factory((key) => getCreator(key)?._get(getCreator, chain)) as TCreate;
+      return this.factory((key) => getCreator(key, 'default')?._get(getCreator, chain)) as TCreate;
     } else {
       ctor = this.use;
       if (!ctor && typeof this.provide === 'function') {
@@ -106,9 +110,11 @@ export class ObjectCreator<T = any> {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const argsInjections = (Reflect.getMetadata(inject_, ctor) ?? []) as any[];
 
+      const resolutions = getResolutions(ctor);
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const args: any[] = argsInjections.map((inj) => {
-        const key = getKey(inj);
+      const args: any[] = argsInjections.map((inj, index) => {
+        const key = inj;
 
         if (chain.has(key)) {
           throw new Error(`${chain.values().next().value} has cycle dependency for ${inj}`);
@@ -116,7 +122,7 @@ export class ObjectCreator<T = any> {
 
         if (String(key).indexOf('function Object()') < 0) chain.add(key);
 
-        return getCreator(key)?._get(getCreator, chain) ?? undefined;
+        return getCreator(key, resolutions[index])?._get(getCreator, chain) ?? undefined;
       });
 
       return Reflect.construct(ctor, args);
@@ -138,6 +144,7 @@ export function Injectable() {
   };
 }
 
+export function Inject(): ParameterDecorator;
 export function Inject(inject: ProviderKey): ParameterDecorator;
 export function Inject(inject?: ProviderKey): ParameterDecorator {
   return (target: NonNullable<unknown>, propertyKey: string | symbol | undefined, parameterIndex: number) => {
@@ -147,7 +154,23 @@ export function Inject(inject?: ProviderKey): ParameterDecorator {
       inject = args[parameterIndex];
     }
     const args: unknown[] = Reflect.getMetadata(inject_, target) ?? [];
+
     args[parameterIndex] = inject;
     Reflect.defineMetadata(inject_, args, target);
   };
+}
+
+export function Resolution(resolution: ResolutionType): ParameterDecorator {
+  return (target: NonNullable<unknown>, propertyKey: string | symbol | undefined, parameterIndex: number) => {
+    if (resolution) {
+      const resolutions: (ResolutionType | undefined)[] = Reflect.getMetadata(inject_resolution_, target) ?? [];
+      resolutions[parameterIndex] = resolution;
+      Reflect.defineMetadata(inject_resolution_, resolutions, target);
+    }
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getResolutions(target: any): ResolutionType[] {
+  return target ? Reflect.getMetadata(inject_resolution_, target) ?? [] : [];
 }

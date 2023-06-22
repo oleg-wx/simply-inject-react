@@ -18,12 +18,12 @@ export function Preview() {
           }),'singleton'),
         ]}
       >
-        <SomeNameContainer />
+        <SomeNameComponent />
       </DependencyProvider>
   );
 }
 
-export function SomeNameContainer() {
+export function SomeNameComponent() {
   const [name, setName] = useState("");
   const test = useResolver(RandomNameService, [])!;
 
@@ -37,12 +37,12 @@ export function SomeNameContainer() {
     <DependencyProvider provide={[provideClass(Formatter, FormatterLowercase)]}>
       <b>{name}</b>
       <hr />
-      <SomeOtherNameContainer />
+      <SomeOtherNameComponent />
     </DependencyProvider>
   );
 }
 
-export function SomeOtherNameContainer() {
+export function SomeOtherNameComponent() {
   const [name, setName] = useState("");
   debugger
   const test = useResolver(RandomNameService, [])!;

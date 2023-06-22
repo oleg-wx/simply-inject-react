@@ -12,14 +12,15 @@ type Value<T> = T;
 
 type Factory<T> = (provider: <SubT>(provide: ProviderKey<SubT>) => SubT | undefined) => T;
 
-export type Lifetime = 'singleton' | 'scoped' | 'transient' | 'looped';
+export type LifetimeType = 'singleton' | 'scoped' | 'transient' | 'looped';
+export type ResolutionType = 'default' | 'onlySelf' | 'skipSelf';
 
 export class StaticKey<T> {
   readonly for: T = undefined as any;
   constructor(public readonly key: string) {}
 }
 
-export type ProviderKey<T = any> = Constructor<T> | StaticKey<T> | string;
+export type ProviderKey<T = any> = Constructor<T> | StaticKey<T>;
 export type ComponentProviderKey<T = any> = ComponentClass<T> | FunctionComponent<T>;
 
 interface BasicProvider<T> {
@@ -34,13 +35,13 @@ export interface ValueProvider<T = unknown> extends BasicProvider<T> {
 export interface ConstructorProvider<T = unknown> extends BasicProvider<T> {
   provide: ProviderKey<T>;
   use?: Constructor<T>;
-  lifetime?: Lifetime;
+  lifetime?: LifetimeType;
 }
 
 export interface FactoryProvider<T = unknown> extends BasicProvider<T> {
   provide: ProviderKey;
   useFactory?: Factory<T>;
-  lifetime?: Lifetime;
+  lifetime?: LifetimeType;
 }
 
 export interface ComponentProvider<T = any> {
@@ -50,16 +51,16 @@ export interface ComponentProvider<T = any> {
 
 export type Provider<T = any> = ValueProvider<T> | ConstructorProvider<T> | FactoryProvider<T>;
 
-export function provideClass<T = any>(provide: ProviderKey<T>, lifetime?: Lifetime): ConstructorProvider<T>;
+export function provideClass<T = any>(provide: ProviderKey<T>, lifetime?: LifetimeType): ConstructorProvider<T>;
 export function provideClass<T = any>(
   provide: ProviderKey<T>,
   constructor?: Constructor<T>,
-  lifetime?: Lifetime
+  lifetime?: LifetimeType
 ): ConstructorProvider<T>;
 export function provideClass<T = any>(
   provide: ProviderKey<T>,
-  constructorOrLifetime?: Constructor<T> | Lifetime,
-  lifetime?: Lifetime
+  constructorOrLifetime?: Constructor<T> | LifetimeType,
+  lifetime?: LifetimeType
 ): ConstructorProvider<T> {
   if (typeof constructorOrLifetime === 'string') {
     lifetime = constructorOrLifetime;
@@ -72,7 +73,7 @@ export function provideClass<T = any>(
 export function provideFactory<T = any>(
   provide: ProviderKey<T>,
   factory: Factory<T>,
-  lifetime: Lifetime = 'transient'
+  lifetime: LifetimeType = 'transient'
 ): FactoryProvider<T> {
   return { provide, useFactory: factory, lifetime };
 }
@@ -83,4 +84,10 @@ export function provideValue<T = any>(provide: ProviderKey<T>, value: Value<T>):
 
 export function getKey<T>(key: ProviderKey<T>) {
   return key instanceof StaticKey ? key.key : key;
+}
+
+export function provideComponent<T>(key: ComponentProviderKey<T>): ComponentProvider<T>;
+export function provideComponent<T>(key: ComponentProviderKey<T>, use: ComponentProviderKey<T>): ComponentProvider<T>;
+export function provideComponent<T>(key: ComponentProviderKey<T>, use?: ComponentProviderKey<T>): ComponentProvider<T> {
+  return { provide: key, use: use ?? key };
 }

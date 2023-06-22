@@ -28,9 +28,7 @@ npm i -D react-app-rewired customize-cra babel-plugin-transform-typescript-metad
 const path = require('path');
 const { useBabelRc, override, addWebpackAlias } = require('customize-cra');
 
-module.exports = override(
-  useBabelRc()
-);
+module.exports = override(useBabelRc());
 ```
 
 ```javascript
@@ -55,7 +53,9 @@ Wrap components with `DependencyProvider`, provide dependencies, resolve and use
   <SomeComponent />
 </DependencyProvider>
 ```
-To resolve implementation there is `useResolver` hook. It already has memoization under the hood, so you need to pass dependencies array as a second parameter
+
+To resolve implementation there is `useResolver` hook. It already has memoization under the hood, so you need to pass dependencies array as last parameter
+
 ```javascript
 // SomeComponent.tsx
 const myService = useResolver(MyServiceAbstract);
@@ -78,7 +78,8 @@ You can nest `DependencyProvider` inside `DependencyProvider` to override depend
 
 ### Providers
 
-You can provide __class__, __factory__. and __value__. You can specify `class` or `StaticKey` for implementation.
+You can provide **class**, **factory**. and **value**. You can specify `class` or `StaticKey` for implementation.
+
 ```javascript
 provideClass(MyServiceAbstract, MyServiceConcrete);
 
@@ -94,7 +95,7 @@ There are 4 lifetimes: **scoped**, **looped**, **transient**, and **singleton**.
 **scoped** _(default)_ is one for your **provider**.  
 **singleton** is one for the application and can be added only once in any `DependencyProvider`  
 **transient** created when requested.  
-**looped** is like transient but scoped for one event loop...   
+**looped** is like transient but scoped for one event loop...
 
 _Be careful_ to inject services with shorter life circle to ones that 'live' longer.
 
@@ -118,7 +119,9 @@ export class MyServiceConcrete extends MyServiceAbstract {
     constructor(public strategy:SomeStrategyAbstract){}
 }
 ```
+
 You might specify direct dependency with `@Inject`, without it injection should be provided automatically by _metadata_ so for interfaces and values it is mandatory to use `@Inject` with `StaticKey`.
+
 ```javascript
 @Injectable()
 export class MyServiceConcrete extends MyServiceAbstract {
@@ -126,28 +129,49 @@ export class MyServiceConcrete extends MyServiceAbstract {
 }
 ```
 
-### Example
+### Resolutions
+
+**skipSelf** Will skip closest `DependencyProvider` except the root one (most upper level).  
+**onlySelf** Will take dependency from closest `DependencyProvider`.
+**default** Will look for dependency in every `DependencyProvider` in upward hierarchy.   
+
+```javascript
+const skipSelf = useResolver(MyServiceAbstract, 'skipSelf');
+const onlySelf = useResolver(MyServiceAbstract, 'onlySelf');
+```
+
+```javascript
+export class MyServiceConcrete extends MyServiceAbstract {
+    constructor(@Resolution('onlySelf') @Inject() public strategy:SomeStrategyAbstract){}
+}
+```
+
+### Simple Example
 
 ```javascript
 // Preview.tsx
 export function Preview() {
   return (
     <DependencyProvider
-        provide={[
-          /*  RandomNameService is a transient because we need to reassign its constructor parameter,
+      provide={[
+        /*  RandomNameService is a transient because we need to reassign its constructor parameter,
               but we won't provide it once more but memoize it for component*/
-          provideClass(RandomNameService, "transient"),
-          provideClass(Formatter, FormatterUppercase),
-          provideValue(NAME_URL, "https://randomuser.me/api/"),
-          /* NAME_GETTER could be value as well, just for the demo purposes lets make it singleton factory */
-          provideFactory(NAME_GETTER, () => ({
-            getName: (value: { first: string; last: string; title?: string }) =>
-              [value.title, value.first, value.last].filter((x) => x).join(" "),
-          }),'singleton'),
-        ]}
-      >
-        <SomeNameComponent />
-      </DependencyProvider>
+        provideClass(RandomNameService, 'transient'),
+        provideClass(Formatter, FormatterUppercase),
+        provideValue(NAME_URL, 'https://randomuser.me/api/'),
+        /* NAME_GETTER could be value as well, just for the demo purposes lets make it singleton factory */
+        provideFactory(
+          NAME_GETTER,
+          () => ({
+            getName: (value: { first: string, last: string, title?: string }) =>
+              [value.title, value.first, value.last].filter((x) => x).join(' '),
+          }),
+          'singleton'
+        ),
+      ]}
+    >
+      <SomeNameComponent />
+    </DependencyProvider>
   );
 }
 ```
@@ -193,8 +217,8 @@ export function SomeOtherNameComponent() {
 ```
 
 ```javascript
-export const NAME_URL = new StaticKey<string>('NAMES_URL');
-export const NAME_GETTER = new StaticKey<NameGetter>('NAME_GETTER');
+export const NAME_URL = new StaticKey() < string > 'NAMES_URL';
+export const NAME_GETTER = new StaticKey() < NameGetter > 'NAME_GETTER';
 
 export interface NameGetter {
   getName(value: unknown): string;

@@ -1,4 +1,4 @@
-import { Inject, Injectable, StaticKey } from 'injections/di/utils';
+import { Resolution, Inject, Injectable, StaticKey } from 'injections';
 
 export interface InjectValue {
   value: string;
@@ -80,4 +80,24 @@ export class TestConcrete2 extends TestAbstract {
 @Injectable()
 export class TestParent {
   constructor(public test: TestAbstract) {}
+}
+
+@Injectable()
+export class TestParentSkipSelf {
+  constructor(@Resolution('skipSelf') public test: TestAbstract) {}
+}
+
+@Injectable()
+export class TestParentWithParentSkipSelf {
+  constructor(@Resolution('skipSelf') public test: TestParentSkipSelf) {}
+}
+
+@Injectable()
+export class TestParentOnlySelf {
+  constructor(@Resolution('onlySelf') public test: TestAbstract) {}
+}
+
+@Injectable()
+export class TestParentWithParentOnlySelf {
+  constructor(@Resolution('onlySelf') public test: TestParentOnlySelf) {}
 }
