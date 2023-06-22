@@ -141,11 +141,20 @@ const onlySelf = useResolver(MyServiceAbstract, 'onlySelf');
 ```
 
 ```javascript
+@Injectable()
 export class MyServiceConcrete extends MyServiceAbstract {
-    constructor(@Resolution('onlySelf') @Inject() public strategy:SomeStrategyAbstract){}
+    constructor(@Resolution('onlySelf') public strategy:SomeStrategyAbstract){}
 }
 ```
 
+### Required
+By default not provided dependencies will re resolved as `undefined`, but constructor arguments may be marked as required to _throw an error_ if dependency is not provided. 
+```javascript
+@Injectable()
+export class MyServiceConcrete extends MyServiceAbstract {
+    constructor(@Required() public strategy:SomeStrategyAbstract){}
+}
+```
 ### Simple Example
 
 ```javascript

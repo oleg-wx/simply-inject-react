@@ -10,6 +10,7 @@ import {
   ResolutionType,
   ValueProvider,
 } from './types';
+import { throwRequiredError } from './thorwErrors';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CreatorGetter<T = any> = <T2 = unknown>(
@@ -20,6 +21,8 @@ export type CreatorGetter<T = any> = <T2 = unknown>(
 const injectable_ = Symbol('injectable_');
 const inject_ = Symbol('inject_');
 const inject_resolution_ = Symbol('inject_resolution_');
+const required_ = Symbol('required_');
+
 const design_param_types = 'design:paramtypes';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,6 +68,9 @@ export class ObjectCreator<T = any> {
     getCreator: CreatorGetter<unknown>,
     chain: Set<ProviderKey> = new Set()
   ): TCreate | undefined {
+    
+    chain.add(this.provide);
+
     if (this.lifetime === 'singleton') {
       let singleton = ObjectCreator.SINGLETONS.get(this.provide) as TCreate | undefined;
       if (singleton == null) {
@@ -111,6 +117,7 @@ export class ObjectCreator<T = any> {
       const argsInjections = (Reflect.getMetadata(inject_, ctor) ?? []) as any[];
 
       const resolutions = getResolutions(ctor);
+      const required = getRequired(ctor);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const args: any[] = argsInjections.map((inj, index) => {
@@ -122,7 +129,13 @@ export class ObjectCreator<T = any> {
 
         if (String(key).indexOf('function Object()') < 0) chain.add(key);
 
-        return getCreator(key, resolutions[index])?._get(getCreator, chain) ?? undefined;
+        const impl = getCreator(key, resolutions[index])?._get(getCreator, chain) ?? undefined;
+
+        if (!impl && required[index]) {
+          throwRequiredError(key, chain);
+        }
+
+        return impl;
       });
 
       return Reflect.construct(ctor, args);
@@ -170,7 +183,20 @@ export function Resolution(resolution: ResolutionType): ParameterDecorator {
   };
 }
 
+export function Required(): ParameterDecorator {
+  return (target: NonNullable<unknown>, propertyKey: string | symbol | undefined, parameterIndex: number) => {
+    const required: (boolean | undefined)[] = Reflect.getMetadata(required_, target) ?? [];
+    required[parameterIndex] = true;
+    Reflect.defineMetadata(required_, required, target);
+  };
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getResolutions(target: any): ResolutionType[] {
   return target ? Reflect.getMetadata(inject_resolution_, target) ?? [] : [];
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getRequired(target: any): (boolean | undefined)[] {
+  return target ? Reflect.getMetadata(required_, target) ?? [] : [];
 }

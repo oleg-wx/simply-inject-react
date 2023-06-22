@@ -44,7 +44,6 @@ export function SomeNameComponent() {
 
 export function SomeOtherNameComponent() {
   const [name, setName] = useState("");
-  debugger
   const test = useResolver(RandomNameService, [])!;
 
   useEffect(() => {

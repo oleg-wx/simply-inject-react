@@ -1,11 +1,5 @@
-import {
-  DependencyResolver,
-  Injectable,
-  StaticKey,
-  provideClass,
-  provideFactory,
-  provideValue,
-} from 'injections';
+import { DependencyResolver, Injectable, StaticKey, provideClass, provideFactory, provideValue, Required } from 'injections';
+import { delayed } from '../delayed';
 import {
   InjectKey,
   TestAbstract,
@@ -22,7 +16,6 @@ import {
   TestParentSkipSelf,
   TestParentWithParentOnlySelf,
 } from '../testClassesInject';
-import { delayed } from '../delayed';
 
 describe('[DependencyResolver] simple tests', () => {
   interface Test {
@@ -474,5 +467,31 @@ describe('[DependencyResolver] Resolutions', () => {
     test3 = resolver3.get(TestParentWithParentOnlySelf)!;
     expect(test3.test).not.toBeUndefined();
     expect(test3.test.test).toBeUndefined();
+  });
+});
+
+describe('[DependencyResolver] Required', () => {
+
+  @Injectable()
+  class Test3 {}
+
+  @Injectable()
+  class Test2 {
+    constructor(@Required() public test: Test3) {}
+  }
+
+  @Injectable()
+  class Test1 {
+    constructor(@Required() public test: Test2) {}
+  }
+
+  @Injectable()
+  class Test {
+    constructor(@Required() public test: Test1) {}
+  }
+
+  fit('should throw for required', () => {
+    const resolver = new DependencyResolver([provideClass(Test), provideClass(Test1), provideClass(Test2)]);
+    expect(() => resolver.get(Test)).toThrow(/Test <- Test1 <- Test2 <- Test3/);
   });
 });

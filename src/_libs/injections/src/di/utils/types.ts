@@ -17,7 +17,10 @@ export type ResolutionType = 'default' | 'onlySelf' | 'skipSelf';
 
 export class StaticKey<T> {
   readonly for: T = undefined as any;
-  constructor(public readonly key: string) {}
+  readonly name: string;
+  constructor(key: string) {
+    this.name = key;
+  }
 }
 
 export type ProviderKey<T = any> = Constructor<T> | StaticKey<T>;
@@ -83,7 +86,7 @@ export function provideValue<T = any>(provide: ProviderKey<T>, value: Value<T>):
 }
 
 export function getKey<T>(key: ProviderKey<T>) {
-  return key instanceof StaticKey ? key.key : key;
+  return key instanceof StaticKey ? key.name : key;
 }
 
 export function provideComponent<T>(key: ComponentProviderKey<T>): ComponentProvider<T>;
