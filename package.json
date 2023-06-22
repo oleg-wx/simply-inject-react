@@ -43,10 +43,11 @@
     "eject": "react-scripts eject",
     "publish:lib": "npm run build:lib && cd ./src/_libs/injections && npm publish && cd ../..",
     "unpublish:lib": "cd ./src/_libs/injections && npm unpublish && cd ../..",
-    "build:lib": "npm run cleardist && cd ./src/_libs/injections && npm run build && cd ../.. && npm run copy_readme",
+    "build:lib": "npm run cleardist && cd ./src/_libs/injections && npm run build && cd ../.. && npm run copy_readme && npm run copy_license",
     "build:lib:patch": "cd ./src/_libs/injections && npm --no-git-tag-version version patch && cd ../.. && build:lib",
     "cleardist": "rimraf rm ./src/_libs/injections/dist",
-    "copy_readme": "copyfiles ./README.md ./src/_libs/injections/dist",
+    "copy_readme": "copyfiles ./README.md ./src/_libs/injections/",
+    "copy_license": "copyfiles ./LICENSE ./src/_libs/injections/",
     "react-app-rewired": "^2.2.1"
   },
   "eslintConfig": {

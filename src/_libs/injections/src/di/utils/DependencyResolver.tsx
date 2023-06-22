@@ -9,7 +9,7 @@ export class DependencyResolver {
   constructor(providers: Provider[], componentProviders: ComponentProvider[] = [], parent?: DependencyResolver) {
     providers.forEach((provider) => {
       const key = getKey(provider.provide);
-      const creator = new ObjectCreator(provider, this._map);
+      const creator = new ObjectCreator(provider);
       if (creator.lifetime === 'singleton' && (this._map.has(key) || parent?._getCreator(key))) {
         throw new Error(
           `[Dependency] Singleton for ${String(
@@ -30,7 +30,7 @@ export class DependencyResolver {
   get<T>(key: ProviderKey<T>): T | undefined {
     const key_ = getKey(key);
 
-    return this._getCreator<T>(key_)?.get<T>();
+    return this._getCreator<T>(key_)?.get<T>((key) => this._getCreator(key));
   }
 
   getComponent<T>(key: ComponentProviderKey<T>): ComponentProviderKey<T> {

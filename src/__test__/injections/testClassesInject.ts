@@ -62,3 +62,22 @@ export class TestInjectAll {
     @Inject(TestFactoryInject) public factory: TestFactoryInject
   ) {}
 }
+
+export abstract class TestAbstract {
+  abstract value: number;
+}
+
+@Injectable()
+export class TestConcrete1 extends TestAbstract {
+  value = 1;
+}
+
+@Injectable()
+export class TestConcrete2 extends TestAbstract {
+  value = 2;
+}
+
+@Injectable()
+export class TestParent {
+  constructor(public test: TestAbstract) {}
+}

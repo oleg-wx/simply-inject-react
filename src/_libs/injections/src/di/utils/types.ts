@@ -12,7 +12,7 @@ type Value<T> = T;
 
 type Factory<T> = (provider: <SubT>(provide: ProviderKey<SubT>) => SubT | undefined) => T;
 
-export type Lifetime = 'singleton' | 'scoped' | 'transient' | 'loop';
+export type Lifetime = 'singleton' | 'scoped' | 'transient' | 'looped';
 
 export class StaticKey<T> {
   readonly for: T = undefined as any;

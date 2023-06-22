@@ -1,93 +1,55 @@
-import { DependencyProvider, provideClass, provideValue, useResolver } from 'injections';
-import { TestInjectionBase, TestInjection, TestInner, TestInjectionValue, provideKey, TestInjection2 } from './TestInjectionClasses';
-import { ReactNode, useState } from 'react';
+import { DependencyProvider, provideClass, provideFactory, provideValue, useResolver } from 'injections';
+import { ReactNode, useEffect, useState } from 'react';
+import { RandomNameService, Formatter, FormatterUppercase, NAME_URL, NAME_GETTER, FormatterLowercase } from './test';
 
 export function Preview() {
   return (
     <DependencyProvider
-      provide={[
-        { provide: TestInjectionBase, use: TestInjection, lifetime: 'transient' },
-        { provide: TestInjectionValue },
-        provideClass(TestInner),
-        provideClass(TestInjection2),
-        provideValue(provideKey, { test: 'static test' }),
-      ]}
-    >
-      <TestContext />
-      <ChangeContext />
-      <TestContext2 />
+        provide={[
+          /* RandomNameService is a transient because we need to reassign its constructor parameter,
+             but we won't provide it once more but memoize it for component*/
+          provideClass(RandomNameService, "transient"),
+          provideClass(Formatter, FormatterUppercase),
+          provideValue(NAME_URL, "https://randomuser.me/api/"),
+          /* NAME_GETTER could be value as well, just for the demo purposes lets make it singleton factory */
+          provideFactory(NAME_GETTER, () => ({
+            getName: (value: { first: string; last: string; title?: string }) =>
+              [value.title, value.first, value.last].filter((x) => x).join(" "),
+          }),'singleton'),
+        ]}
+      >
+        <SomeNameContainer />
+      </DependencyProvider>
+  );
+}
 
+export function SomeNameContainer() {
+  const [name, setName] = useState("");
+  const test = useResolver(RandomNameService, [])!;
+
+  useEffect(() => {
+    test.getName().then((name) => setName(name));
+  }, [test]);
+
+  return (
+    /* We are reusing parent Resolver with its implementations, but we override Formatter.
+       As Formatter is scoped and used as constructor argument we made service that use it - transient*/
+    <DependencyProvider provide={[provideClass(Formatter, FormatterLowercase)]}>
+      <b>{name}</b>
       <hr />
-
-      <ChangeContext />
-
-      <InnerProvider>
-        <TestContext />
-        <TestContext2 />
-      </InnerProvider>
+      <SomeOtherNameContainer />
     </DependencyProvider>
   );
 }
 
-function ChangeContext() {
-  const resolved = useResolver(TestInjectionBase, [])!;
-  resolved.inner!.value += ' changed';
-  (resolved as TestInjection).value += ' changed';
+export function SomeOtherNameContainer() {
+  const [name, setName] = useState("");
+  debugger
+  const test = useResolver(RandomNameService, [])!;
 
-  return <></>;
-}
+  useEffect(() => {
+    test.getName().then((name) => setName(name));
+  }, [test]);
 
-export function TestContext() {
-  const resolved = useResolver(TestInjectionBase, [])!;
-  const value = useResolver(provideKey, [])!;
-  const innerValue = useResolver(TestInjectionValue, [])!;
-  const resolved2 = useResolver(TestInjection2, [])!;
-
-  return (
-    <>
-      <h1>TestContext1</h1>
-      <h3>{resolved.inner!.value}</h3>
-      <h4>{(resolved as TestInjection).value}</h4>
-      <b>{value.test}</b>
-      <br />
-      <b>{innerValue.value.test}</b>
-      <br />
-      <h2>{resolved.date} | {resolved2.date}</h2>
-    </>
-  );
-}
-
-export function TestContext2() {
-  const resolved = useResolver(TestInjectionBase)!;
-  const resolved2 = useResolver(TestInjection2, [])!;
-
-  return (
-    <>
-      <h1>TestContext2</h1>
-      <h3>{resolved.inner!.value}</h3>
-      <h4>{(resolved as TestInjection).value}</h4>
-      <h2>{resolved.date} | {resolved2.date}</h2>
-    </>
-  );
-}
-
-export function InnerProvider(props: { children?: ReactNode }) {
-  const [state, setState] = useState(false);
-
-  return (
-    <>
-      {state ? (
-        <DependencyProvider
-          provide={[
-            { provide: TestInjectionValue },
-            provideClass(TestInner),
-            provideValue(provideKey, { test: 'static test' }),
-          ]}
-        >
-          {props.children}
-        </DependencyProvider>
-      ) : null}
-      <button onClick={() => setState(!state)}>toggle inner</button>
-    </>
-  );
+  return <i>{name}</i>;
 }

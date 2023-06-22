@@ -8,12 +8,16 @@ import {
 } from 'injections/di/utils';
 import {
   InjectKey,
+  TestAbstract,
+  TestConcrete1,
+  TestConcrete2,
   TestExtendInject,
   TestExtendInjectInner,
   TestFactoryInject,
   TestFactoryInject2,
   TestInjectAbstract,
   TestInjectValue,
+  TestParent,
 } from './testClassesInject';
 import { delayed } from './delayed';
 
@@ -187,8 +191,8 @@ describe('[DependencyResolver] Lifetimes', () => {
 
   it('should resolve loop', async () => {
     const resolver = new DependencyResolver([
-      provideClass(TestExtendInject, TestExtendInject, 'loop'),
-      { provide: TestExtendInjectInner, use: TestExtendInjectInner, lifetime: 'loop' },
+      provideClass(TestExtendInject, TestExtendInject, 'looped'),
+      { provide: TestExtendInjectInner, use: TestExtendInjectInner, lifetime: 'looped' },
     ]);
 
     let resolved1 = resolver.get(TestExtendInject);
@@ -277,13 +281,34 @@ describe('[DependencyResolver] Lifetimes', () => {
     const resolver = new DependencyResolver([provideClass(TestExtendInject, TestExtendInject, 'singleton')]);
 
     await delayed(() => {
-      const resolver2 = ()=> new DependencyResolver(
-        [{ provide: TestExtendInject, use: TestExtendInject, lifetime: 'singleton' }],
-        [],
-        resolver
-      );
+      const resolver2 = () =>
+        new DependencyResolver(
+          [{ provide: TestExtendInject, use: TestExtendInject, lifetime: 'singleton' }],
+          [],
+          resolver
+        );
 
       expect(resolver2).toThrow(/Singleton/);
     });
+  });
+});
+
+describe('[DependencyResolver] Parent resolver', () => {
+  fit('should resolve overridden items from parent', async () => {
+    const resolver1 = new DependencyResolver([
+      provideClass(TestAbstract, TestConcrete1),
+      provideClass(TestParent, 'transient'),
+    ]);
+
+    let test1 = resolver1.get(TestParent)!;
+    expect(test1.test.value).toBe(1);
+
+    const resolver2 = new DependencyResolver([provideClass(TestAbstract, TestConcrete2)], [], resolver1);
+
+    test1 = resolver1.get(TestParent)!;
+    const test2 = resolver2.get(TestParent)!;
+
+    expect(test1.test.value).toBe(1);
+    expect(test2.test.value).toBe(2);
   });
 });

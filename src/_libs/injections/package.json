@@ -1,6 +1,6 @@
 {
   "name": "@symplx/inject-react",
-  "version": "0.0.1-alpha.4",
+  "version": "0.0.1-alpha.7",
   "description": "Simplest DI for React",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
