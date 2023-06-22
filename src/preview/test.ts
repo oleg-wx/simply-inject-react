@@ -1,5 +1,5 @@
 import { Inject, Injectable, StaticKey } from 'injections';
-import { useEffect } from 'react';
+import { DependencyList, useEffect } from 'react';
 
 export const NAME_GETTER = new StaticKey<NameGetter>('NAME_GETTER');
 
@@ -72,21 +72,4 @@ export class RandomNameService {
       this._cachedName = undefined;
     }, this._cacheDelayMs);
   }
-}
-
-export function useEffectAsync(callback: () => Promise<void | (() => void | undefined)>, deps?: any[]) {
-  if (deps && !Array.isArray(deps)) {
-    throw new Error('deps must be an array');
-  }
-  useEffect(() => {
-    var res = callback();
-    return () => {
-      res?.then &&
-        res.then((e) => {
-          if (typeof e === 'function') {
-            e();
-          }
-        });
-    };
-  }, deps);
 }

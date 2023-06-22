@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { TestAbstract, TestConcrete1, TestParentOnlySelf } from '__test__/testClassesInject';
-import { DependencyProvider, Resolve, provideClass, useResolver } from 'injections';
-import { provideComponent } from 'injections/di/utils/types';
+import { DependencyProvider, Resolve, provideClass, useResolver, provideComponent } from 'injections';
 import { ReactNode } from 'react';
 
 describe('[DependencyProvider] Resolutions', () => {

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ReactNode, createElement } from "react";
-import { ComponentProviderKey } from "./utils/types";
+import { ComponentProviderKey } from "./types";
 import { useResolveContext } from "./DependencyProvider";
 
 export default function Resolve<T = any>(

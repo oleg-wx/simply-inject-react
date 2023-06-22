@@ -22,3 +22,5 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 /src/_libs/injections/dist
+/src/_libs/injections/LICENSE
+/src/_libs/injections/README.md

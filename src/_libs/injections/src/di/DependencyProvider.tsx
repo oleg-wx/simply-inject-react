@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import React, { DependencyList, ReactNode, createContext, useContext, useMemo } from 'react';
-import { ComponentProvider, Constructor, ProviderKey, ResolutionType, StaticKey, Provider } from './utils/types';
-import { DependencyResolver } from './utils/DependencyResolver';
+import { ComponentProvider, Constructor, ProviderKey, ResolutionType, StaticKey, Provider } from './types';
+import { DependencyResolver } from './DependencyResolver';
 
 const DependencyContext = createContext<DependencyResolver>(undefined!);
 

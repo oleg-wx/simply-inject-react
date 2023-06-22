@@ -10,7 +10,7 @@ import {
   ResolutionType,
   ValueProvider,
 } from './types';
-import { throwRequiredError } from './thorwErrors';
+import { throwRequiredError } from './throwErrors';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CreatorGetter<T = any> = <T2 = unknown>(

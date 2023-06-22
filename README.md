@@ -133,7 +133,7 @@ export class MyServiceConcrete extends MyServiceAbstract {
 
 **skipSelf** Will skip closest `DependencyProvider` except the root one (most upper level).  
 **onlySelf** Will take dependency from closest `DependencyProvider`.
-**default** Will look for dependency in every `DependencyProvider` in upward hierarchy.   
+**default** Will look for dependency in every `DependencyProvider` in upward hierarchy.
 
 ```javascript
 const skipSelf = useResolver(MyServiceAbstract, 'skipSelf');
@@ -148,13 +148,16 @@ export class MyServiceConcrete extends MyServiceAbstract {
 ```
 
 ### Required
-By default not provided dependencies will re resolved as `undefined`, but constructor arguments may be marked as required to _throw an error_ if dependency is not provided. 
+
+By default not provided dependencies will re resolved as `undefined`, but constructor arguments may be marked as required to _throw an error_ if dependency is not provided.
+
 ```javascript
 @Injectable()
 export class MyServiceConcrete extends MyServiceAbstract {
     constructor(@Required() public strategy:SomeStrategyAbstract){}
 }
 ```
+
 ### Simple Example
 
 ```javascript
@@ -225,7 +228,7 @@ export function SomeOtherNameComponent() {
 }
 ```
 
-```javascript
+```typescript
 export const NAME_URL = new StaticKey() < string > 'NAMES_URL';
 export const NAME_GETTER = new StaticKey() < NameGetter > 'NAME_GETTER';
 

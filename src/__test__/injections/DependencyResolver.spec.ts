@@ -327,7 +327,9 @@ describe('[DependencyResolver] Parent resolver', () => {
 });
 
 describe('[DependencyResolver] Factory', () => {
+
   const KEY = new StaticKey<{ date: Date }>('KEY');
+
   it('should call factory once for scoped', async () => {
     let called = 0;
     const resolver = new DependencyResolver([
@@ -490,7 +492,7 @@ describe('[DependencyResolver] Required', () => {
     constructor(@Required() public test: Test1) {}
   }
 
-  fit('should throw for required', () => {
+  it('should throw for required', () => {
     const resolver = new DependencyResolver([provideClass(Test), provideClass(Test1), provideClass(Test2)]);
     expect(() => resolver.get(Test)).toThrow(/Test <- Test1 <- Test2 <- Test3/);
   });
