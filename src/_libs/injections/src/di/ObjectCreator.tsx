@@ -1,21 +1,21 @@
-import 'reflect-metadata';
 import {
   ComponentProviderKey,
   Constructor,
   ConstructorProvider,
   FactoryProvider,
-  LifetimeType,
+  Lifetime,
   Provider,
   ProviderKey,
-  ResolutionType,
+  ResolutionStrategy,
   ValueProvider,
 } from './types';
-import { throwRequiredError } from './throwErrors';
+import { throwCircleDependencyError, throwMetadataError, throwRequiredError } from './throwErrors';
+import { defineMetadata, getMetadata, isMetadataEnabled } from './utils/getMetadata';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CreatorGetter<T = any> = <T2 = unknown>(
   key: ProviderKey<T2>,
-  resolution: ResolutionType
+  resolution: ResolutionStrategy
 ) => ObjectCreator<T> | undefined;
 
 const injectable_ = Symbol('injectable_');
@@ -38,7 +38,7 @@ export class ObjectCreator<T = any> {
   private _rqto?: ReturnType<typeof setTimeout>;
   private _object?: T;
 
-  readonly lifetime: LifetimeType = 'scoped';
+  readonly lifetime: Lifetime = 'scoped';
   readonly provide: ProviderKey<T>;
   readonly use?: Constructor<T>;
   readonly factory?: FactoryProvider<T>['useFactory'];
@@ -68,7 +68,6 @@ export class ObjectCreator<T = any> {
     getCreator: CreatorGetter<unknown>,
     chain: Set<ProviderKey> = new Set()
   ): TCreate | undefined {
-    
     chain.add(this.provide);
 
     if (this.lifetime === 'singleton') {
@@ -104,7 +103,13 @@ export class ObjectCreator<T = any> {
     if (this.value != null) {
       return this.value as TCreate;
     } else if (this.factory) {
-      return this.factory((key) => getCreator(key, 'default')?._get(getCreator, chain)) as TCreate;
+      return this.factory((key, resolution) => {
+        if (isCircle(key, chain, resolution)) {
+          throw throwCircleDependencyError(chain);
+        }
+
+        return getCreator(key, resolution ?? 'default')?._get(getCreator, chain);
+      }) as TCreate;
     } else {
       ctor = this.use;
       if (!ctor && typeof this.provide === 'function') {
@@ -114,7 +119,7 @@ export class ObjectCreator<T = any> {
 
     if (ctor) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const argsInjections = (Reflect.getMetadata(inject_, ctor) ?? []) as any[];
+      const argsInjections = (getMetadata(inject_, ctor) ?? []) as any[];
 
       const resolutions = getResolutions(ctor);
       const required = getRequired(ctor);
@@ -123,13 +128,15 @@ export class ObjectCreator<T = any> {
       const args: any[] = argsInjections.map((inj, index) => {
         const key = inj;
 
-        if (chain.has(key)) {
-          throw new Error(`${chain.values().next().value} has cycle dependency for ${inj}`);
+        const resolution = resolutions[index];
+
+        if (isCircle(key, chain, resolution)) {
+          throw throwCircleDependencyError(chain);
+        } else if (String(key).indexOf('function Object()') < 0) {
+          chain.add(key)
         }
 
-        if (String(key).indexOf('function Object()') < 0) chain.add(key);
-
-        const impl = getCreator(key, resolutions[index])?._get(getCreator, chain) ?? undefined;
+        const impl = getCreator(key, resolution)?._get(getCreator, chain) ?? undefined;
 
         if (!impl && required[index]) {
           throwRequiredError(key, chain);
@@ -144,14 +151,18 @@ export class ObjectCreator<T = any> {
 }
 
 export function Injectable() {
+  if (!isMetadataEnabled(Object)) {
+    throwMetadataError();
+  }
+
   // eslint-disable-next-line @typescript-eslint/ban-types, @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
   return function <TFunc extends Function>(target: TFunc, _context?: any) {
-    const args: unknown[] = Reflect.getMetadata(design_param_types, target) ?? [];
-    const customArgs: unknown[] = Reflect.getMetadata(inject_, target) ?? [];
+    const args: unknown[] = getMetadata(design_param_types, target) ?? [];
+    const customArgs: unknown[] = getMetadata(inject_, target) ?? [];
     customArgs.forEach((arg, i) => arg !== undefined && (args[i] = arg));
     //if (!args) throwMetadataError();
-    Reflect.defineMetadata(injectable_, true, target);
-    Reflect.defineMetadata(inject_, args, target);
+    defineMetadata(injectable_, true, target);
+    defineMetadata(inject_, args, target);
 
     return target;
   };
@@ -162,41 +173,45 @@ export function Inject(inject: ProviderKey): ParameterDecorator;
 export function Inject(inject?: ProviderKey): ParameterDecorator {
   return (target: NonNullable<unknown>, propertyKey: string | symbol | undefined, parameterIndex: number) => {
     if (!inject) {
-      const args = Reflect.getMetadata(design_param_types, target) ?? [];
+      const args = getMetadata(design_param_types, target) ?? [];
       //if (!args) throwMetadataError();
       inject = args[parameterIndex];
     }
-    const args: unknown[] = Reflect.getMetadata(inject_, target) ?? [];
+    const args: unknown[] = getMetadata(inject_, target) ?? [];
 
     args[parameterIndex] = inject;
-    Reflect.defineMetadata(inject_, args, target);
+    defineMetadata(inject_, args, target);
   };
 }
 
-export function Resolution(resolution: ResolutionType): ParameterDecorator {
+export function Resolution(resolution: ResolutionStrategy): ParameterDecorator {
   return (target: NonNullable<unknown>, propertyKey: string | symbol | undefined, parameterIndex: number) => {
     if (resolution) {
-      const resolutions: (ResolutionType | undefined)[] = Reflect.getMetadata(inject_resolution_, target) ?? [];
+      const resolutions: (ResolutionStrategy | undefined)[] = getMetadata(inject_resolution_, target) ?? [];
       resolutions[parameterIndex] = resolution;
-      Reflect.defineMetadata(inject_resolution_, resolutions, target);
+      defineMetadata(inject_resolution_, resolutions, target);
     }
   };
 }
 
 export function Required(): ParameterDecorator {
   return (target: NonNullable<unknown>, propertyKey: string | symbol | undefined, parameterIndex: number) => {
-    const required: (boolean | undefined)[] = Reflect.getMetadata(required_, target) ?? [];
+    const required: (boolean | undefined)[] = getMetadata(required_, target) ?? [];
     required[parameterIndex] = true;
-    Reflect.defineMetadata(required_, required, target);
+    defineMetadata(required_, required, target);
   };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getResolutions(target: any): ResolutionType[] {
-  return target ? Reflect.getMetadata(inject_resolution_, target) ?? [] : [];
+function getResolutions(target: any): ResolutionStrategy[] {
+  return target ? getMetadata(inject_resolution_, target) ?? [] : [];
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getRequired(target: any): (boolean | undefined)[] {
-  return target ? Reflect.getMetadata(required_, target) ?? [] : [];
+  return target ? getMetadata(required_, target) ?? [] : [];
+}
+
+function isCircle(key: ProviderKey, chain: Set<ProviderKey>, resolution: ResolutionStrategy = 'default') {
+  return chain.has(key) && resolution !== 'skipSelf';
 }

@@ -1,5 +1,5 @@
 import { ComponentProviderMap, ObjectCreator, ProviderMap } from './ObjectCreator';
-import { ComponentProvider, ComponentProviderKey, Provider, ProviderKey, ResolutionType } from './types';
+import { ComponentProvider, ComponentProviderKey, Provider, ProviderKey, ResolutionStrategy } from './types';
 
 export class DependencyResolver {
   private _parent?: DependencyResolver;
@@ -28,8 +28,8 @@ export class DependencyResolver {
   }
 
   get<T>(key: ProviderKey<T>): T | undefined;
-  get<T>(key: ProviderKey<T>, resolution: ResolutionType): T | undefined;
-  get<T>(key: ProviderKey<T>, resolution?: ResolutionType): T | undefined {
+  get<T>(key: ProviderKey<T>, resolution: ResolutionStrategy): T | undefined;
+  get<T>(key: ProviderKey<T>, resolution?: ResolutionStrategy): T | undefined {
     return this._getCreator<T>(key, resolution)?.get<T>((key, resolution) => this._getCreator(key, resolution));
   }
 
@@ -37,13 +37,12 @@ export class DependencyResolver {
     return this._componentMap.get(key) ?? this._parent?.getComponent(key) ?? key;
   }
 
-  private _getCreator<T>(key: ProviderKey<T>, resolution?: ResolutionType): ObjectCreator<T> | undefined {
+  private _getCreator<T>(key: ProviderKey<T>, resolution?: ResolutionStrategy): ObjectCreator<T> | undefined {
     switch (resolution) {
       case 'onlySelf':
         return this._map.get(key);
       case 'skipSelf':
-        if (this._parent) return this._parent?._getCreator(key);
-        else return this._getCreator(key);
+        return this._parent?._getCreator(key);
       default:
         return this._map.get(key) ?? this._parent?._getCreator(key);
     }

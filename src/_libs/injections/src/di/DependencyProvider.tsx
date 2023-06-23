@@ -1,6 +1,5 @@
-import 'reflect-metadata';
-import React, { DependencyList, ReactNode, createContext, useContext, useMemo } from 'react';
-import { ComponentProvider, Constructor, ProviderKey, ResolutionType, StaticKey, Provider } from './types';
+import { DependencyList, ReactNode, createContext, useContext, useMemo } from 'react';
+import { ComponentProvider, Constructor, ProviderKey, ResolutionStrategy, StaticKey, Provider } from './types';
 import { DependencyResolver } from './DependencyResolver';
 
 const DependencyContext = createContext<DependencyResolver>(undefined!);
@@ -22,24 +21,24 @@ export const DependencyProvider = function (props: {
 };
 
 export function useResolver<T>(key: StaticKey<T>, deps?: DependencyList): T | undefined;
-export function useResolver<T>(key: StaticKey<T>, resolution?: ResolutionType, deps?: DependencyList): T | undefined;
-export function useResolver<T>(key: Constructor<T>, resolution?: ResolutionType, deps?: DependencyList): T | undefined;
+export function useResolver<T>(key: StaticKey<T>, resolution?: ResolutionStrategy, deps?: DependencyList): T | undefined;
+export function useResolver<T>(key: Constructor<T>, resolution?: ResolutionStrategy, deps?: DependencyList): T | undefined;
 export function useResolver<T>(key: Constructor<T>, deps?: DependencyList): T | undefined;
 export function useResolver<T>(
   key: ProviderKey<T>,
-  depsOrResolution?: ResolutionType | DependencyList,
+  depsOrResolution?: ResolutionStrategy | DependencyList,
   deps?: DependencyList
 ): T | undefined {
-  let resolution: ResolutionType | undefined;
+  let resolution: ResolutionStrategy | undefined;
 
   if (!deps && Array.isArray(depsOrResolution)) {
     deps = depsOrResolution;
   } else {
-    resolution = depsOrResolution as ResolutionType;
+    resolution = depsOrResolution as ResolutionStrategy;
   }
 
   const context = useContext(DependencyContext);
-  const resolved = useMemo(() => context?.get<T>(key, resolution as ResolutionType), deps);
+  const resolved = useMemo(() => context?.get<T>(key, resolution as ResolutionStrategy), deps);
 
   return resolved;
 }

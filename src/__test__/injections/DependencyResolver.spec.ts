@@ -1,4 +1,13 @@
-import { DependencyResolver, Injectable, StaticKey, provideClass, provideFactory, provideValue, Required } from 'injections';
+import 'reflect-metadata';
+import {
+  DependencyResolver,
+  Injectable,
+  StaticKey,
+  provideClass,
+  provideFactory,
+  provideValue,
+  Required,
+} from 'injections';
 import { delayed } from '../delayed';
 import {
   InjectKey,
@@ -16,6 +25,7 @@ import {
   TestParentSkipSelf,
   TestParentWithParentOnlySelf,
 } from '../testClassesInject';
+
 
 describe('[DependencyResolver] simple tests', () => {
   interface Test {
@@ -327,7 +337,6 @@ describe('[DependencyResolver] Parent resolver', () => {
 });
 
 describe('[DependencyResolver] Factory', () => {
-
   const KEY = new StaticKey<{ date: Date }>('KEY');
 
   it('should call factory once for scoped', async () => {
@@ -408,10 +417,12 @@ describe('[DependencyResolver] Resolutions', () => {
     const resolver1 = new DependencyResolver([provideClass(TestAbstract, TestConcrete1)]);
     const resolver2 = new DependencyResolver([provideClass(TestAbstract, TestConcrete2)], [], resolver1);
 
+    // skips root to null
     const test1 = resolver1.get(TestAbstract, 'skipSelf')!;
+    // skips current to root
     const test2 = resolver2.get(TestAbstract, 'skipSelf')!;
 
-    expect(test1.value).toBe(1);
+    expect(test1).toBeUndefined();
     expect(test2.value).toBe(1);
   });
 
@@ -437,10 +448,12 @@ describe('[DependencyResolver] Resolutions', () => {
       resolver1
     );
 
+    // skips root to null
     const test1 = resolver1.get(TestParentSkipSelf)!;
+    // skips current to root
     const test2 = resolver2.get(TestParentSkipSelf)!;
 
-    expect(test1.test.value).toBe(1);
+    expect(test1.test).toBeUndefined();
     expect(test2.test.value).toBe(1);
   });
 
@@ -473,7 +486,6 @@ describe('[DependencyResolver] Resolutions', () => {
 });
 
 describe('[DependencyResolver] Required', () => {
-
   @Injectable()
   class Test3 {}
 

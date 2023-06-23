@@ -10,10 +10,10 @@ export type Constructor<T> =
 
 type Value<T> = T;
 
-type Factory<T> = (provider: <SubT>(provide: ProviderKey<SubT>) => SubT | undefined) => T;
+export type Lifetime = 'singleton' | 'scoped' | 'transient' | 'looped';
+export type ResolutionStrategy = 'default' | 'onlySelf' | 'skipSelf';
 
-export type LifetimeType = 'singleton' | 'scoped' | 'transient' | 'looped';
-export type ResolutionType = 'default' | 'onlySelf' | 'skipSelf';
+type Factory<T> = (provider: <SubT>(provide: ProviderKey<SubT>, resolution?: ResolutionStrategy) => SubT | undefined) => T;
 
 export class StaticKey<T> {
   readonly for: T = undefined as any;
@@ -38,13 +38,13 @@ export interface ValueProvider<T = unknown> extends BasicProvider<T> {
 export interface ConstructorProvider<T = unknown> extends BasicProvider<T> {
   provide: ProviderKey<T>;
   use?: Constructor<T>;
-  lifetime?: LifetimeType;
+  lifetime?: Lifetime;
 }
 
 export interface FactoryProvider<T = unknown> extends BasicProvider<T> {
   provide: ProviderKey;
   useFactory?: Factory<T>;
-  lifetime?: LifetimeType;
+  lifetime?: Lifetime;
 }
 
 export interface ComponentProvider<T = any> {
@@ -54,16 +54,16 @@ export interface ComponentProvider<T = any> {
 
 export type Provider<T = any> = ValueProvider<T> | ConstructorProvider<T> | FactoryProvider<T>;
 
-export function provideClass<T = any>(provide: ProviderKey<T>, lifetime?: LifetimeType): ConstructorProvider<T>;
+export function provideClass<T = any>(provide: ProviderKey<T>, lifetime?: Lifetime): ConstructorProvider<T>;
 export function provideClass<T = any>(
   provide: ProviderKey<T>,
   constructor?: Constructor<T>,
-  lifetime?: LifetimeType
+  lifetime?: Lifetime
 ): ConstructorProvider<T>;
 export function provideClass<T = any>(
   provide: ProviderKey<T>,
-  constructorOrLifetime?: Constructor<T> | LifetimeType,
-  lifetime?: LifetimeType
+  constructorOrLifetime?: Constructor<T> | Lifetime,
+  lifetime?: Lifetime
 ): ConstructorProvider<T> {
   if (typeof constructorOrLifetime === 'string') {
     lifetime = constructorOrLifetime;
@@ -76,7 +76,7 @@ export function provideClass<T = any>(
 export function provideFactory<T = any>(
   provide: ProviderKey<T>,
   factory: Factory<T>,
-  lifetime: LifetimeType = 'transient'
+  lifetime?: Lifetime
 ): FactoryProvider<T> {
   return { provide, useFactory: factory, lifetime };
 }

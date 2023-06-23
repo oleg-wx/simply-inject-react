@@ -1,6 +1,6 @@
 {
   "name": "@symplx/inject-react",
-  "version": "0.0.1-beta.2",
+  "version": "0.1.0-beta.2",
   "description": "Simplest DI for React",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -44,7 +44,9 @@
   },
   "dependencies": {
     "react": ">=16.x.x",
-    "react-dom": ">=16.x.x",
+    "react-dom": ">=16.x.x"
+  },
+  "peerDependencies": {
     "reflect-metadata": "^0.1.x"
   }
 }
